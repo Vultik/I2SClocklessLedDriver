@@ -83,7 +83,7 @@ public:
     volatile xSemaphoreHandle I2SClocklessLedDriver_sem = NULL;
     volatile xSemaphoreHandle I2SClocklessLedDriver_semSync = NULL;
     volatile xSemaphoreHandle I2SClocklessLedDriver_semDisp= NULL;
-
+    
     /*
      This flag is used when using the NO_WAIT modeÒÒ
      */
@@ -96,6 +96,7 @@ public:
     I2SClocklessLedDriver(){};
     void setPins( int * Pins)
     {
+        
         for (int i = 0; i < num_strips ;i++)
         {
             PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[Pins[i]], PIN_FUNC_GPIO);

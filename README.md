@@ -47,9 +47,9 @@ FasLED.addLeds<PIN4,ORDER>(leds,3*NUM_LED_PER_STRIPS,NUM_LED_PER_STRIPS);
 example 3: For information if you want to get (for development purpose ease) the leds1,leds2,...
 ```C
 CRGB *leds1=leds;
-CRGB *leds2=leds+NUM_LED_PER_STRIPS;
-CRGB *leds3=leds+2*NUM_LED_PER_STRIPS;
-CRGB *leds4=leds+3*NUM_LED_PER_STRIPS;
+CRGB *leds2=leds+NUM_LED_PER_STRIP;
+CRGB *leds3=leds+2*NUM_LED_PER_STRIP;
+CRGB *leds4=leds+3*NUM_LED_PER_STRIP;
 ```
 
 If all the strips of the first example are of the same size, then the 2 examples are the doing exactly the same. Hence when using strips of different lengths we cannot put them in a  big array ? **FALSE**. You cant create a large array when using `NUM_LED_PER_STRIP` being the largest of `number_of_leds`. Of course you array woul be larger than you actual numbre of leds but we can do with the lost of space.
@@ -57,9 +57,32 @@ If all the strips of the first example are of the same size, then the 2 examples
 ### OK, but what is the link between an array of strips and this driver ?
 Here is how we would declare the 4 strips in of our example:
 ```C
+
+CRGB leds1[number_of_leds1];
+CRGB leds2[number_of_leds2];
+CRGB leds3[number_of_leds3];
+CRGB leds4[number_of_leds4];
+
+FasLED.addLeds<PIN1,ORDER>(leds1,number_of_leds1);
+FasLED.addLeds<PIN2,ORDER>(leds2,number_of_leds2);
+FasLED.addLeds<PIN3,ORDER>(leds3,number_of_leds3);
+FasLED.addLeds<PIN4,ORDER>(leds4,number_of_leds4);
+```
+BECOMES
+```C
+
+
 CRGB leds[4*NUM_LED_PER_STRIPS];
 int pins[4]={PIN1,PIN2,PIN3,PIN4};
-driver.initled((uint8_t*)leds,pins,4,NUM_LED_PER_STRIPS,ORDER_GRB);
+driver.initled((uint8_t*)leds,pins,4,NUM_LED_PER_STRIP,ORDER_GRB);
+CRGB *leds1=leds;
+CRGB *leds2=leds+NUM_LED_PER_STRIP;
+CRGB *leds3=leds+2*NUM_LED_PER_STRIP;
+CRGB *leds4=leds+3*NUM_LED_PER_STRIP;
+
+//Where NUM_LED_PER_STRIP =max(number_of_leds1,number_of_leds2,number_of_leds3,number_of_leds4)
+
+
 ```
 We are declaring that my `leds` array represent 4 strips of `NUM_LED_PER_STRIPS` leds ,each strip being linked to the pins defined in the pins array `pins`. This is way easier to declare a lot of strips. As discussed before if your strips are not of the same lentgh just define `NUM_LED_PER_STRIPS` with the largest `number_of_leds`.
 

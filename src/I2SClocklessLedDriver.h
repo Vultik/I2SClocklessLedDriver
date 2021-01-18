@@ -84,6 +84,7 @@ public:
     uint8_t __red_map[256];
     uint8_t __white_map[256];
     float _gammar,_gammab,_gammag,_gammaw;
+    uint8_t __brigthness;
     intr_handle_t _gI2SClocklessDriver_intr_handle;
     volatile xSemaphoreHandle I2SClocklessLedDriver_sem = NULL;
     volatile xSemaphoreHandle I2SClocklessLedDriver_semSync = NULL;
@@ -113,30 +114,10 @@ public:
     }
 
     //Corrected = 255 * (Image/255)^(1/2.2).
-    void setGamma (float gamma)
-    {
-        _gammab=gamma;
-        _gammag=gamma;
-        _gammar=gamma;
-        _gammaw=gamma;
-    }
 
-    void setGamma(float gammar,float gammag,float gammab)
-    {
-        _gammab=gammab;
-        _gammag=gammag;
-        _gammar=gammar;
-        _gammaw=1;
-    }
-    void setGamma(float gammar,float gammag,float gammab,float gammaw)
-    {
-        _gammab=gammab;
-        _gammag=gammag;
-        _gammar=gammar;
-        _gammaw=gammaw;
-    }
     void setBrightness(int brightness)
     {
+        __brigthness=brightness;
         for (int i = 0; i < 256; i++)
         {
             __green_map[i] = (uint8_t)((float)(255* powf( (float)((i * brightness)) / 255/255,(float)(1/_gammag))));
@@ -146,6 +127,31 @@ public:
         }
     }
 
+    void setGamma (float gamma)
+    {
+        _gammab=gamma;
+        _gammag=gamma;
+        _gammar=gamma;
+        _gammaw=gamma;
+         setBrightness(__brigthness);
+    }
+
+    void setGamma(float gammar,float gammag,float gammab)
+    {
+        _gammab=gammab;
+        _gammag=gammag;
+        _gammar=gammar;
+        _gammaw=1;
+         setBrightness(__brigthness);
+    }
+    void setGamma(float gammar,float gammag,float gammab,float gammaw)
+    {
+        _gammab=gammab;
+        _gammag=gammag;
+        _gammar=gammar;
+        _gammaw=gammaw;
+        setBrightness(__brigthness);
+    }
     void i2sInit()
     {
         int interruptSource;
@@ -508,8 +514,9 @@ public:
             p_b = 2;
             break;
         }
+        __brigthness=255;
         setGamma(1,1,1,1);
-        setBrightness(255);
+        
         dmaBufferCount = 2;
         this->leds = leds;
         this->num_led_per_strip = num_led_per_strip;
@@ -533,7 +540,6 @@ public:
     volatile int num_strips;
     volatile int num_led_per_strip;
     //int clock_pin;
-    int brigthness;
     int p_r, p_g, p_b;
     int i2s_base_pin_index;
     int nb_components;

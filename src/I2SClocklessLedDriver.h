@@ -38,6 +38,7 @@ typedef union
     uint32_t shorts[8];
     uint32_t raw[2];
 } Lines;
+
 static const char *TAG = "I2SClocklessLedDriver";
 static void IRAM_ATTR _I2SClocklessLedDriverinterruptHandler(void *arg);
 static void IRAM_ATTR transpose16x1_noinline2(unsigned char *A, uint16_t *B);
@@ -82,6 +83,7 @@ public:
     uint8_t __blue_map[256];
     uint8_t __red_map[256];
     uint8_t __white_map[256];
+    float _gammar,_gammab,_gammag,_gammaw;
     intr_handle_t _gI2SClocklessDriver_intr_handle;
     volatile xSemaphoreHandle I2SClocklessLedDriver_sem = NULL;
     volatile xSemaphoreHandle I2SClocklessLedDriver_semSync = NULL;
@@ -99,22 +101,48 @@ public:
     void setPins(int *Pins)
     {
 
+ 
         for (int i = 0; i < num_strips; i++)
         {
+        
             PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[Pins[i]], PIN_FUNC_GPIO);
             gpio_set_direction((gpio_num_t)Pins[i], (gpio_mode_t)GPIO_MODE_DEF_OUTPUT);
             gpio_matrix_out(Pins[i], deviceBaseIndex[I2S_DEVICE] + i + 8, false, false);
+            
         }
     }
 
+    //Corrected = 255 * (Image/255)^(1/2.2).
+    void setGamma (float gamma)
+    {
+        _gammab=gamma;
+        _gammag=gamma;
+        _gammar=gamma;
+        _gammaw=gamma;
+    }
+
+    void setGamma(float gammar,float gammag,float gammab)
+    {
+        _gammab=gammab;
+        _gammag=gammag;
+        _gammar=gammar;
+        _gammaw=1;
+    }
+    void setGamma(float gammar,float gammag,float gammab,float gammaw)
+    {
+        _gammab=gammab;
+        _gammag=gammag;
+        _gammar=gammar;
+        _gammaw=gammaw;
+    }
     void setBrightness(int brightness)
     {
         for (int i = 0; i < 256; i++)
         {
-            __green_map[i] = (uint8_t)((int)(i * brightness) / 255);
-            __blue_map[i] = (uint8_t)((int)(i * brightness) / 255);
-            __red_map[i] = (uint8_t)((int)(i * brightness) / 255);
-            __white_map[i] = (uint8_t)((int)(i * brightness) / 255);
+            __green_map[i] = (uint8_t)((float)(255* powf( (float)((i * brightness)) / 255/255,(float)(1/_gammag))));
+            __blue_map[i] = (uint8_t)((float)(255* powf( (float)((i * brightness)) / 255/255,(float)(1/_gammab))));
+            __red_map[i] = (uint8_t)((float)(255* powf( (float)((i * brightness)) / 255/255,(float)(1/_gammar))));
+            __white_map[i] = (uint8_t)((float)(255* powf( (float)((i * brightness)) / 255/255,(float)(1/_gammaw))));
         }
     }
 
@@ -480,7 +508,7 @@ public:
             p_b = 2;
             break;
         }
-
+        setGamma(1,1,1,1);
         setBrightness(255);
         dmaBufferCount = 2;
         this->leds = leds;
@@ -563,7 +591,7 @@ public:
         (&I2S0)->conf.tx_fifo_reset = 0;
     }
 
-    void i2sStop()
+    void IRAM_ATTR i2sStop()
     {
 
         ets_delay_us(16);
@@ -667,7 +695,7 @@ public:
         isDisplaying = true;
     }
 
-    void i2sReset()
+    void IRAM_ATTR i2sReset()
     {
         const unsigned long lc_conf_reset_flags = I2S_IN_RST_M | I2S_OUT_RST_M | I2S_AHBM_RST_M | I2S_AHBM_FIFO_RST_M;
         (&I2S0)->lc_conf.val |= lc_conf_reset_flags;
@@ -681,6 +709,10 @@ public:
 };
 static void IRAM_ATTR _I2SClocklessLedDriverinterruptHandler(void *arg)
 {
+    #ifdef DO_NOT_USE_INTERUPT
+        REG_WRITE(I2S_INT_CLR_REG(0), (REG_READ(I2S_INT_RAW_REG(0)) & 0xffffffc0) | 0x3f);
+        return;
+    #else
     I2SClocklessLedDriver *cont = (I2SClocklessLedDriver *)arg;
 
     if (GET_PERI_REG_BITS(I2S_INT_ST_REG(I2S_DEVICE), I2S_OUT_EOF_INT_ST_V, I2S_OUT_EOF_INT_ST_S))
@@ -728,6 +760,7 @@ static void IRAM_ATTR _I2SClocklessLedDriverinterruptHandler(void *arg)
         }
     }
     REG_WRITE(I2S_INT_CLR_REG(0), (REG_READ(I2S_INT_RAW_REG(0)) & 0xffffffc0) | 0x3f);
+    #endif 
 }
 
 static void IRAM_ATTR transpose16x1_noinline2(unsigned char *A, uint16_t *B)
